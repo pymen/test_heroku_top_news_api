@@ -1,27 +1,27 @@
-import json
+from flask import Flask, jsonify, json
+from werkzeug import exceptions
 
-import requests
-from flask import Flask, jsonify
-from os import environ
+from utils import get_top_news
 
 app = Flask(__name__)
 
 
-@app.route('/')
-def top_news():
-    """Return top news from newsapi"""
-    api_key = environ.get('NEWS_API_KEY')
-    url = f"https://newsapi.org/v2/top-headlines?sources=reddit-r-all&apiKey={api_key}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        data = {'error': response.content}
-        return app.response_class(
+@app.errorhandler(exceptions.HTTPException)
+def http_exception(error):
+    """Flask Error handler for all types of HTTP exceptions"""
+    data = {'error': str(error)}
+    return app.response_class(
             response=json.dumps(data),
-            status=response.status_code,
+            status=error.code,
             mimetype='application/json'
         )
+
+
+@app.route('/')
+def top_news():
+    """Return top news from news api"""
+    data = get_top_news()
+    return jsonify(data)
 
 
 if __name__ == '__main__':
